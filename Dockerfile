@@ -52,6 +52,12 @@ RUN --mount=type=bind,target=/scripts,from=with-scripts,source=/scripts \
     && rm -rf /tmp/blocky \
     && homelab cleanup
 
+# Expose the TCP and UDP ports for the Blocky DNS resolver.
+EXPOSE 53/tcp
+EXPOSE 53/udp
+# Expose the HTTP server port used by Blocky.
+EXPOSE 4000
+
 ENV USER=${USER_NAME}
 ENV PATH="/opt/bin:${PATH}"
 
