@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -e -o pipefail
+set -E -e -o pipefail
 
 blocky_config="/data/blocky/config.yml"
 
