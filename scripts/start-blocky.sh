@@ -3,6 +3,12 @@ set -E -e -o pipefail
 
 blocky_config="/data/blocky/config.yml"
 
+set_umask() {
+    # Configure umask to allow write permissions for the group by default
+    # in addition to the owner.
+    umask 0002
+}
+
 setup_blocky_config() {
     echo "Checking for existing Blocky config ..."
     echo
@@ -60,5 +66,6 @@ start_blocky() {
     exec blocky serve --apiHost "${blocky_host:?}" --apiPort 4000 --config /data/blocky/config.yml
 }
 
+set_umask
 setup_blocky_config
 start_blocky
