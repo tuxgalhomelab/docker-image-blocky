@@ -71,12 +71,11 @@ EXPOSE 4000
 # Use the healthcheck command part of blocky as the health checker.
 HEALTHCHECK --start-period=1m --timeout=3s CMD blocky healthcheck
 
-ENV USER=${USER_NAME}
-ENV PATH="/opt/bin:${PATH}"
-
 ENV BLOCKY_HOST="blockyhost"
 
+ENV USER=${USER_NAME}
 USER ${USER_NAME}:${GROUP_NAME}
 WORKDIR /home/${USER_NAME}
+
 CMD ["start-blocky"]
 STOPSIGNAL SIGQUIT
