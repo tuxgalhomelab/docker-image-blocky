@@ -32,20 +32,12 @@ RUN --mount=type=bind,target=/scripts,from=with-scripts,source=/scripts \
     # Download and install the release. \
     && mkdir -p /tmp/blocky \
     && PKG_ARCH="$(case "$(uname -m)" in "x86_64") echo "x86_64" ;; "aarch64"|"armv8l") echo "arm64" ;;  *) echo "Invalid command"; exit 1; esac)" \
-    && curl \
-        --silent \
-        --fail \
-        --location \
-        --show-error \
-        --remote-name \
-        --output-dir /tmp/blocky https://github.com/0xERR0R/blocky/releases/download/${BLOCKY_VERSION:?}/blocky_${BLOCKY_VERSION:?}_Linux_${PKG_ARCH:?}.tar.gz \
-    && curl \
-        --silent \
-        --fail \
-        --location \
-        --show-error \
-        --remote-name \
-        --output-dir /tmp/blocky https://github.com/0xERR0R/blocky/releases/download/${BLOCKY_VERSION:?}/blocky_checksums.txt \
+    && homelab download-file-to \
+        https://github.com/0xERR0R/blocky/releases/download/${BLOCKY_VERSION:?}/blocky_${BLOCKY_VERSION:?}_Linux_${PKG_ARCH:?}.tar.gz \
+        /tmp/blocky \
+    && homelab download-file-to \
+        https://github.com/0xERR0R/blocky/releases/download/${BLOCKY_VERSION:?}/blocky_checksums.txt \
+        /tmp/blocky \
     && pushd /tmp/blocky \
     && grep blocky_${BLOCKY_VERSION:?}_Linux_${PKG_ARCH:?}.tar.gz blocky_checksums.txt | sha256sum -c \
     && tar xvf blocky_${BLOCKY_VERSION:?}_Linux_${PKG_ARCH:?}.tar.gz \
