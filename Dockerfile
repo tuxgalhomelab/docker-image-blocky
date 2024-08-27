@@ -35,12 +35,14 @@ RUN --mount=type=bind,target=/scripts,from=with-scripts,source=/scripts \
         --silent \
         --fail \
         --location \
+        --show-error \
         --remote-name \
         --output-dir /tmp/blocky https://github.com/0xERR0R/blocky/releases/download/${BLOCKY_VERSION:?}/blocky_${BLOCKY_VERSION:?}_Linux_${PKG_ARCH:?}.tar.gz \
     && curl \
         --silent \
         --fail \
         --location \
+        --show-error \
         --remote-name \
         --output-dir /tmp/blocky https://github.com/0xERR0R/blocky/releases/download/${BLOCKY_VERSION:?}/blocky_checksums.txt \
     && pushd /tmp/blocky \
