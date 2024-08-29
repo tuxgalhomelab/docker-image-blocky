@@ -16,7 +16,7 @@ ARG USER_ID
 ARG GROUP_ID
 ARG BLOCKY_VERSION
 
-# hadolint ignore=DL4006,SC2086
+# hadolint ignore=DL4006,SC2086,SC3044
 RUN --mount=type=bind,target=/scripts,from=with-scripts,source=/scripts \
     set -E -e -o pipefail \
     && export HOMELAB_VERBOSE=y \
