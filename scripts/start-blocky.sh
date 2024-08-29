@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -E -e -o pipefail
 
-blocky_config="/data/blocky/config.yml"
+blocky_config="/data/blocky/config/config.yml"
 
 set_umask() {
     # Configure umask to allow write permissions for the group by default
@@ -63,7 +63,7 @@ start_blocky() {
     local blocky_host="${BLOCKY_HOST:-blockyhost}"
     unset BLOCKY_HOST
 
-    exec blocky serve --apiHost "${blocky_host:?}" --apiPort 4000 --config /data/blocky/config.yml
+    exec blocky serve --apiHost "${blocky_host:?}" --apiPort 4000 --config "${blocky_config:?}"
 }
 
 set_umask
