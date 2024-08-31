@@ -28,7 +28,10 @@ RUN \
     && (find /patches -iname *.diff -print0 | sort -z | xargs -0 -r -n 1 patch -p2 -i) \
     # Build Blocky. \
     && go mod tidy \
-    && CGO_ENABLED=0 GOOS=linux go build -a . \
+    && CGO_ENABLED=0 GOOS=linux go build \
+        -a \
+        -ldflags="-X github.com/0xERR0R/blocky/util.Version=${BLOCKY_VERSION:?} -X github.com/0xERR0R/blocky/util.BuildTime=$(date '+%Y%m%d-%H%M%S') -X github.com/0xERR0R/blocky/util.Architecture=$(go env GOARCH)$(go env GOARM)" \
+        . \
     && popd \
     # Copy the build artifacts. \
     && mkdir -p /output/{bin,scripts} \
