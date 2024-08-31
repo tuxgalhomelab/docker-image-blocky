@@ -59,4 +59,8 @@ test_image_after_container_startup() {
     local ip="$(container_ip "${container_name:?}")"
     test_http_endpoint "${container_name:?}" http ${ip:?} 4000
     dig +short @${ip:?} one.one.one.one
+    dig +short @${ip:?} -x 10.10.10.1
+    dig +short @${ip:?} -x 10.10.10.2
+    dig +short @${ip:?} -x 10.10.10.3
+    dig +short @${ip:?} -x 10.10.10.4
 }

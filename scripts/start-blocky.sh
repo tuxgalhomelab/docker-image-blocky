@@ -49,6 +49,24 @@ blocking:
       - fakenews
   loading:
     strategy: failOnError
+
+customDNS:
+  customTTL: 1h
+  filterUnmappedTypes: true
+  mapping:
+    a.example.com: 10.10.10.1
+    b.example.com: 10.10.10.2
+    c.example.com: 10.10.10.1
+    d.example.com: 10.10.10.1
+    e.example.com: 10.10.10.2
+    f.example.com: 10.10.10.3
+    g.example.com: 10.10.10.4
+    h.example.com: 10.10.10.2
+    i.example.com: 10.10.10.3
+  reverseMappingOverride:
+    10.10.10.1: a.example.com
+    10.10.10.2: b.example.com
+    10.10.10.3: f.example.com
 EOF
     fi
 

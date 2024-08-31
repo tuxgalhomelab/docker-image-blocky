@@ -1,0 +1,134 @@
+diff -u -r -N a/blocky/config/custom_dns.go b/blocky/config/custom_dns.go
+--- a/blocky/config/custom_dns.go	2024-08-31 11:18:45.113388359 -0700
++++ b/blocky/config/custom_dns.go	2024-08-31 11:18:31.852988245 -0700
+@@ -11,16 +11,22 @@
+ 
+ // CustomDNS custom DNS configuration
+ type CustomDNS struct {
+-	RewriterConfig      `yaml:",inline"`
+-	CustomTTL           Duration         `yaml:"customTTL" default:"1h"`
+-	Mapping             CustomDNSMapping `yaml:"mapping"`
+-	Zone                ZoneFileDNS      `yaml:"zone" default:""`
+-	FilterUnmappedTypes bool             `yaml:"filterUnmappedTypes" default:"true"`
++	RewriterConfig                                         `yaml:",inline"`
++	CustomTTL              Duration                        `yaml:"customTTL" default:"1h"`
++	Mapping                CustomDNSMapping                `yaml:"mapping"`
++	ReverseMappingOverride CustomDNSReverseMappingOverride `yaml:"reverseMappingOverride"`
++	Zone                   ZoneFileDNS                     `yaml:"zone" default:""`
++	FilterUnmappedTypes    bool                            `yaml:"filterUnmappedTypes" default:"true"`
+ }
+ 
++type CustomDNSReverseIP struct {
++	IP dns.RR
++}
+ type (
+ 	CustomDNSMapping map[string]CustomDNSEntries
+ 	CustomDNSEntries []dns.RR
++	CustomDNSReverseMappingOverride map[CustomDNSReverseIP]CustomDNSReverseEntries
++	CustomDNSReverseEntries []string
+ 
+ 	ZoneFileDNS struct {
+ 		RRs        CustomDNSMapping
+@@ -64,6 +70,39 @@
+ 
+ 	return nil
+ }
++
++func (c *CustomDNSReverseEntries) UnmarshalYAML(unmarshal func(interface{}) error) error {
++	var input string
++	if err := unmarshal(&input); err != nil {
++		return err
++	}
++
++	parts := strings.Split(input, ",")
++	result := make(CustomDNSReverseEntries, len(parts))
++
++	for i, part := range parts {
++		result[i] = part
++	}
++
++	*c = result
++
++	return nil
++}
++
++func (c *CustomDNSReverseIP) UnmarshalYAML(unmarshal func(interface{}) error) error {
++	var input string
++	if err := unmarshal(&input); err != nil {
++		return err
++	}
++
++	result, err := configToRR(input)
++	if err != nil {
++		return err
++	}
++	*c = CustomDNSReverseIP{ IP: result }
++
++	return nil
++}
+ 
+ func (c *CustomDNSEntries) UnmarshalYAML(unmarshal func(interface{}) error) error {
+ 	var input string
+diff -u -r -N a/blocky/resolver/custom_dns_resolver.go b/blocky/resolver/custom_dns_resolver.go
+--- a/blocky/resolver/custom_dns_resolver.go	2024-08-31 11:18:45.205391132 -0700
++++ b/blocky/resolver/custom_dns_resolver.go	2024-08-31 11:18:31.868988731 -0700
+@@ -47,21 +47,55 @@
+ 	}
+ 
+ 	reverse := make(map[string][]string, len(dnsRecords))
++	reverseOverride := make(map[string]bool, len(cfg.ReverseMappingOverride))
++
++	// Add the specified reverse mapping override entries first as-is.
++	for entry, urls := range cfg.ReverseMappingOverride {
++
++		a, isA := entry.IP.(*dns.A)
++		if isA {
++			ip := a.A.String()
++			reverseOverride[ip] = true
++			r, _ := dns.ReverseAddr(ip)
++			for _, url := range urls {
++				reverse[r] = append(reverse[r], url)
++			}
++		}
++
++		aaaa, isAAAA := entry.IP.(*dns.AAAA)
++		if isAAAA {
++			ip := aaaa.AAAA.String()
++			reverseOverride[ip] = true
++			r, _ := dns.ReverseAddr(ip)
++			for _, url := range urls {
++				reverse[r] = append(reverse[r], url)
++			}
++		}
++	}
+ 
+ 	for url, entries := range dnsRecords {
+ 		for _, entry := range entries {
++			// Only if a given entry doesn't exist in the reverse mapping
++			// override, add the reverse mapping records using the
++			// forward records.
+ 			a, isA := entry.(*dns.A)
+ 
+ 			if isA {
+-				r, _ := dns.ReverseAddr(a.A.String())
+-				reverse[r] = append(reverse[r], url)
++				ip := a.A.String()
++				if !reverseOverride[ip] {
++					r, _ := dns.ReverseAddr(ip)
++					reverse[r] = append(reverse[r], url)
++				}
+ 			}
+ 
+ 			aaaa, isAAAA := entry.(*dns.AAAA)
+ 
+ 			if isAAAA {
+-				r, _ := dns.ReverseAddr(aaaa.AAAA.String())
+-				reverse[r] = append(reverse[r], url)
++				ip := aaaa.AAAA.String()
++				if !reverseOverride[ip] {
++					r, _ := dns.ReverseAddr(ip)
++					reverse[r] = append(reverse[r], url)
++				}
+ 			}
+ 		}
+ 	}
