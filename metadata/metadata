@@ -7,10 +7,10 @@ BASE_IMAGE_CONFIG_KEY_PREFIX="BASE_IMAGE"
 
 UPSTREAM_PACKAGE_NAME="Blocky/Go"
 UPSTREAM_BLOCKY_VERSION_CONFIG_KEY="BLOCKY_VERSION"
+UPSTREAM_BLOCKY_GIT_REPO="https://github.com/0xERR0R/blocky"
 UPSTREAM_GO_IMAGE_NAME_CONFIG_KEY="GO_IMAGE_NAME"
 UPSTREAM_GO_IMAGE_TAG_CONFIG_KEY="GO_IMAGE_TAG"
 UPSTREAM_GO_IMAGE_PATTERN="^[0-9]+\.[0-9]+\.[0-9]+-go-.+$"
-UPSTREAM_GIT_REPO="https://github.com/0xERR0R/blocky"
 
 RELEASE_PACKAGE_NAME="Blocky"
 RELEASE_PACKAGE_VERSION_CONFIG_KEY="BLOCKY_VERSION"
@@ -40,7 +40,7 @@ latest_blocky_version() {
         --refs \
         --sort='version:refname' \
         --tags \
-        "${UPSTREAM_GIT_REPO:?}" | \
+        "${UPSTREAM_BLOCKY_GIT_REPO:?}" | \
         cut --delimiter='/' --fields=3 | \
         sort --version-sort --reverse | \
         head -1
