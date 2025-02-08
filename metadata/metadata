@@ -5,15 +5,16 @@ set -E -e -o pipefail
 
 BASE_IMAGE_CONFIG_KEY_PREFIX="BASE_IMAGE"
 
-RELEASE_PACKAGE_NAME="Blocky"
-RELEASE_TAG_PACKAGE_NAME="blocky"
-
 UPSTREAM_PACKAGE_NAME="Blocky/Go"
 UPSTREAM_BLOCKY_VERSION_CONFIG_KEY="BLOCKY_VERSION"
 UPSTREAM_GO_IMAGE_NAME_CONFIG_KEY="GO_IMAGE_NAME"
 UPSTREAM_GO_IMAGE_TAG_CONFIG_KEY="GO_IMAGE_TAG"
 UPSTREAM_GO_IMAGE_PATTERN="^[0-9]+\.[0-9]+\.[0-9]+-go-.+$"
 UPSTREAM_GIT_REPO="https://github.com/0xERR0R/blocky"
+
+RELEASE_PACKAGE_NAME="Blocky"
+RELEASE_PACKAGE_VERSION_CONFIG_KEY="BLOCKY_VERSION"
+RELEASE_TAG_PACKAGE_NAME="blocky"
 
 TEST_TYPE="background"
 TEST_CONTAINER_TYPE="blocky"
@@ -71,7 +72,7 @@ update_latest_upstream_version() {
 }
 
 package_current_release_version() {
-    current_upstream_version
+    get_config_arg "${RELEASE_PACKAGE_VERSION_CONFIG_KEY:?}"
 }
 
 test_start_container() {
