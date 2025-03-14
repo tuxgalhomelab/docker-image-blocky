@@ -38,7 +38,7 @@ RUN \
     && cp /root/blocky-build/blocky /output/bin \
     && cp /scripts/* /output/scripts
 
-FROM ${BASE_IMAGE_NAME}:${BASE_IMAGE_TAG} AS with-scripts
+FROM ${BASE_IMAGE_NAME}:${BASE_IMAGE_TAG}
 
 ARG BASE_IMAGE_NAME
 ARG BASE_IMAGE_TAG
