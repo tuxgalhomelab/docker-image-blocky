@@ -1,21 +1,22 @@
 diff -u -r -N a/blocky/config/custom_dns.go b/blocky/config/custom_dns.go
---- a/blocky/config/custom_dns.go	2024-08-31 11:18:45.113388359 -0700
-+++ b/blocky/config/custom_dns.go	2024-08-31 11:18:31.852988245 -0700
-@@ -11,16 +11,22 @@
+--- a/blocky/config/custom_dns.go	2025-12-27 21:47:46.590873295 -0800
++++ b/blocky/config/custom_dns.go	2025-12-27 22:03:59.156017528 -0800
+@@ -11,17 +11,22 @@
  
  // CustomDNS custom DNS configuration
  type CustomDNS struct {
--	RewriterConfig      `yaml:",inline"`
--	CustomTTL           Duration         `yaml:"customTTL" default:"1h"`
+-	RewriterConfig `yaml:",inline"`
+-
+-	CustomTTL           Duration         `default:"1h"   yaml:"customTTL"`
 -	Mapping             CustomDNSMapping `yaml:"mapping"`
--	Zone                ZoneFileDNS      `yaml:"zone" default:""`
--	FilterUnmappedTypes bool             `yaml:"filterUnmappedTypes" default:"true"`
+-	Zone                ZoneFileDNS      `default:""     yaml:"zone"`
+-	FilterUnmappedTypes bool             `default:"true" yaml:"filterUnmappedTypes"`
 +	RewriterConfig                                         `yaml:",inline"`
-+	CustomTTL              Duration                        `yaml:"customTTL" default:"1h"`
++	CustomTTL              Duration                        `default:"1h"   yaml:"customTTL"`
 +	Mapping                CustomDNSMapping                `yaml:"mapping"`
 +	ReverseMappingOverride CustomDNSReverseMappingOverride `yaml:"reverseMappingOverride"`
-+	Zone                   ZoneFileDNS                     `yaml:"zone" default:""`
-+	FilterUnmappedTypes    bool                            `yaml:"filterUnmappedTypes" default:"true"`
++	Zone                   ZoneFileDNS                     `default:""     yaml:"zone"`
++	FilterUnmappedTypes    bool                            `default:"true" yaml:"filterUnmappedTypes"`
  }
  
 +type CustomDNSReverseIP struct {
@@ -29,7 +30,7 @@ diff -u -r -N a/blocky/config/custom_dns.go b/blocky/config/custom_dns.go
  
  	ZoneFileDNS struct {
  		RRs        CustomDNSMapping
-@@ -64,6 +70,39 @@
+@@ -65,6 +70,39 @@
  
  	return nil
  }
@@ -70,8 +71,8 @@ diff -u -r -N a/blocky/config/custom_dns.go b/blocky/config/custom_dns.go
  func (c *CustomDNSEntries) UnmarshalYAML(unmarshal func(interface{}) error) error {
  	var input string
 diff -u -r -N a/blocky/resolver/custom_dns_resolver.go b/blocky/resolver/custom_dns_resolver.go
---- a/blocky/resolver/custom_dns_resolver.go	2024-08-31 11:18:45.205391132 -0700
-+++ b/blocky/resolver/custom_dns_resolver.go	2024-08-31 11:18:31.868988731 -0700
+--- a/blocky/resolver/custom_dns_resolver.go	2025-12-27 21:47:46.670875196 -0800
++++ b/blocky/resolver/custom_dns_resolver.go	2025-12-27 22:04:08.516294939 -0800
 @@ -47,21 +47,55 @@
  	}
  
