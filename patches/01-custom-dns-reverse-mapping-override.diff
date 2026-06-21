@@ -1,27 +1,22 @@
 diff -u -r -N a/blocky/config/custom_dns.go b/blocky/config/custom_dns.go
---- a/blocky/config/custom_dns.go	2025-12-27 21:47:46.590873295 -0800
-+++ b/blocky/config/custom_dns.go	2025-12-27 22:03:59.156017528 -0800
-@@ -11,17 +11,22 @@
- 
- // CustomDNS custom DNS configuration
- type CustomDNS struct {
--	RewriterConfig `yaml:",inline"`
--
--	CustomTTL           Duration         `default:"1h"   yaml:"customTTL"`
--	Mapping             CustomDNSMapping `yaml:"mapping"`
--	Zone                ZoneFileDNS      `default:""     yaml:"zone"`
--	FilterUnmappedTypes bool             `default:"true" yaml:"filterUnmappedTypes"`
-+	RewriterConfig                                         `yaml:",inline"`
-+	CustomTTL              Duration                        `default:"1h"   yaml:"customTTL"`
-+	Mapping                CustomDNSMapping                `yaml:"mapping"`
+--- a/blocky/config/custom_dns.go	2026-06-21 15:34:37.902388628 -0700
++++ b/blocky/config/custom_dns.go	2026-06-21 16:12:28.894576665 -0700
+@@ -17,15 +17,23 @@
+ 	CustomTTL Duration `default:"1h" yaml:"customTTL"`
+ 	// Simple domain-to-IP mappings; multiple IPs per domain separated by commas.
+ 	Mapping CustomDNSMapping `yaml:"mapping"`
++	// Reverse mapping override from IP-to-domain.
 +	ReverseMappingOverride CustomDNSReverseMappingOverride `yaml:"reverseMappingOverride"`
-+	Zone                   ZoneFileDNS                     `default:""     yaml:"zone"`
-+	FilterUnmappedTypes    bool                            `default:"true" yaml:"filterUnmappedTypes"`
+ 	// DNS zone file content for more complex record definitions (A, AAAA, CNAME, TXT, SRV).
+ 	Zone ZoneFileDNS `default:"" yaml:"zone"`
+ 	// If true, queries for types not defined for a domain return empty; if false, they are forwarded upstream.
+ 	FilterUnmappedTypes bool `default:"true" yaml:"filterUnmappedTypes"`
  }
  
 +type CustomDNSReverseIP struct {
 +	IP dns.RR
 +}
++
  type (
  	CustomDNSMapping map[string]CustomDNSEntries
  	CustomDNSEntries []dns.RR
@@ -30,11 +25,10 @@ diff -u -r -N a/blocky/config/custom_dns.go b/blocky/config/custom_dns.go
  
  	ZoneFileDNS struct {
  		RRs        CustomDNSMapping
-@@ -65,6 +70,39 @@
- 
+@@ -70,6 +78,39 @@
  	return nil
  }
-+
+ 
 +func (c *CustomDNSReverseEntries) UnmarshalYAML(unmarshal func(interface{}) error) error {
 +	var input string
 +	if err := unmarshal(&input); err != nil {
@@ -67,13 +61,14 @@ diff -u -r -N a/blocky/config/custom_dns.go b/blocky/config/custom_dns.go
 +
 +	return nil
 +}
- 
- func (c *CustomDNSEntries) UnmarshalYAML(unmarshal func(interface{}) error) error {
++ 
+ func (c *CustomDNSEntries) UnmarshalYAML(unmarshal func(any) error) error {
  	var input string
+ 	if err := unmarshal(&input); err != nil {
 diff -u -r -N a/blocky/resolver/custom_dns_resolver.go b/blocky/resolver/custom_dns_resolver.go
---- a/blocky/resolver/custom_dns_resolver.go	2025-12-27 21:47:46.670875196 -0800
-+++ b/blocky/resolver/custom_dns_resolver.go	2025-12-27 22:04:08.516294939 -0800
-@@ -47,21 +47,55 @@
+--- a/blocky/resolver/custom_dns_resolver.go	2026-06-21 15:34:37.910388855 -0700
++++ b/blocky/resolver/custom_dns_resolver.go	2026-06-21 16:12:52.451155070 -0700
+@@ -59,10 +59,25 @@
  	}
  
  	reverse := make(map[string][]string, len(dnsRecords))
@@ -81,22 +76,9 @@ diff -u -r -N a/blocky/resolver/custom_dns_resolver.go b/blocky/resolver/custom_
 +
 +	// Add the specified reverse mapping override entries first as-is.
 +	for entry, urls := range cfg.ReverseMappingOverride {
-+
-+		a, isA := entry.IP.(*dns.A)
-+		if isA {
-+			ip := a.A.String()
-+			reverseOverride[ip] = true
-+			r, _ := dns.ReverseAddr(ip)
-+			for _, url := range urls {
-+				reverse[r] = append(reverse[r], url)
-+			}
-+		}
-+
-+		aaaa, isAAAA := entry.IP.(*dns.AAAA)
-+		if isAAAA {
-+			ip := aaaa.AAAA.String()
-+			reverseOverride[ip] = true
-+			r, _ := dns.ReverseAddr(ip)
++		if ip := extractIPFromRecord(entry.IP); ip != nil {
++			reverseOverride[ip.String()] = true
++			r, _ := dns.ReverseAddr(ip.String())
 +			for _, url := range urls {
 +				reverse[r] = append(reverse[r], url)
 +			}
@@ -105,31 +87,11 @@ diff -u -r -N a/blocky/resolver/custom_dns_resolver.go b/blocky/resolver/custom_
  
  	for url, entries := range dnsRecords {
  		for _, entry := range entries {
+-			if ip := extractIPFromRecord(entry); ip != nil {
 +			// Only if a given entry doesn't exist in the reverse mapping
 +			// override, add the reverse mapping records using the
 +			// forward records.
- 			a, isA := entry.(*dns.A)
- 
- 			if isA {
--				r, _ := dns.ReverseAddr(a.A.String())
--				reverse[r] = append(reverse[r], url)
-+				ip := a.A.String()
-+				if !reverseOverride[ip] {
-+					r, _ := dns.ReverseAddr(ip)
-+					reverse[r] = append(reverse[r], url)
-+				}
++			if ip := extractIPFromRecord(entry); ip != nil && !reverseOverride[ip.String()] {
+ 				r, _ := dns.ReverseAddr(ip.String())
+ 				reverse[r] = append(reverse[r], url)
  			}
- 
- 			aaaa, isAAAA := entry.(*dns.AAAA)
- 
- 			if isAAAA {
--				r, _ := dns.ReverseAddr(aaaa.AAAA.String())
--				reverse[r] = append(reverse[r], url)
-+				ip := aaaa.AAAA.String()
-+				if !reverseOverride[ip] {
-+					r, _ := dns.ReverseAddr(ip)
-+					reverse[r] = append(reverse[r], url)
-+				}
- 			}
- 		}
- 	}
